@@ -2,14 +2,13 @@ import math
 import numpy as np
 import json
 import random
+import matplotlib.pyplot as plt
 from functools import partial
 
 output_file = open("Evolutie.txt", "w")
 
 def fitness_function(x, a, b, c):
     return a * x ** 2 + b * x + c
-
-polynomial = partial(fitness_function, a=-1, b=1, c=2)
 
 class Chromosome:
     def __init__(self, bits, num_bits, bit_value, domain):
@@ -130,6 +129,7 @@ class Sim:
         self.crossover_chance = crossover_chance 
         self.mutation_chance = mutation_chance 
         self.iterations = iterations
+        self.polynomial = partial(fitness_function, a=coefficients['a'], b=coefficients['b'], c=coefficients['c'])
         
     def binary_search(self, low, high, intervals, value):
         while low < high:
@@ -148,20 +148,17 @@ class Sim:
         return self.population.chromosomes[i]
 
     def crossover(self, parent1, parent2):
-        if np.random.rand() < self.crossover_chance:
+        if np.random.rand() > self.crossover_chance:
             return (parent1, parent2)
-        else: 
-            crossover_point = np.random.randint(self.num_bits)
-            str_list1 = list(map(str, parent1.bits))
-            str_list2 = list(map(str, parent2.bits))
+        crossover_point = np.random.randint(1, self.num_bits - 1)
+        
+        bits1 = parent1.bits[:crossover_point] + parent2.bits[crossover_point:]
+        bits2 = parent2.bits[:crossover_point] + parent1.bits[crossover_point:]
 
-            substr = str_list1[crossover_point:]
-            str_list1[crossover_point:] = str_list2[crossover_point:]
-            str_list2[crossover_point:] = substr
-            
-            new_parent1 = Chromosome("".join(str_list1), self.num_bits, self.bit_value, self.domain)
-            new_parent2 = Chromosome("".join(str_list2), self.num_bits, self.bit_value, self.domain)
-            return (new_parent1, new_parent2)
+        return (
+            Chromosome(bits1, self.num_bits, self.bit_value, self.domain),
+            Chromosome(bits2, self.num_bits, self.bit_value, self.domain)
+        )
 
     def mutate(self, chromosome):
         chromosome_list = list(chromosome.bits)
@@ -174,7 +171,7 @@ class Sim:
 
         return Chromosome("".join(chromosome_list), self.num_bits, self.bit_value, self.domain)
 
-    def execute_iteration(self):
+    def execute_iteration(self, iteration):
         new_generation = []
         intervals = [0.0]
         total_fitness = 0.0 
@@ -184,7 +181,7 @@ class Sim:
         probabilities = np.zeros(self.population_size)
 
         for chromosome in self.population.chromosomes:
-            fitness = chromosome.evaluate(polynomial)
+            fitness = chromosome.evaluate(self.polynomial)
             total_fitness += fitness 
 
             if fitness > best_fitness:
@@ -215,9 +212,16 @@ class Sim:
         self.population.chromosomes = new_generation
 
     def execute_iterations(self, file_name, show):
-        while self.iterations > 0:
-            self.execute_iteration()
-            self.iterations = self.iterations - 1 
+        iteration = 0
+        while iteration < self.iterations:
+            self.execute_iteration(iteration)
+            iteration = iteration + 1
+
+    def print_results(self):
+        pass
+
+    def plot_results(self):
+        pass
 
 config = Sim.parse_json("config.json")
 if config:
