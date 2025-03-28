@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import json
+import random
 from functools import partial
 
 output_file = open("Evolutie.txt", "w")
@@ -11,10 +12,12 @@ def fitness_function(x, a, b, c):
 polynomial = partial(fitness_function, a=-1, b=1, c=2)
 
 class Chromosome:
-    def __init__(self, value, num_bits):
-        self.bits = self.encode_value(value, num_bits)
-        self.value = self.decode_bits(self.bits)
+    def __init__(self, bits, num_bits, bit_value, domain):
+        self.bits = bits
         self.num_bits = num_bits 
+        self.bit_value = bit_value
+        self.domain = domain
+        self.value = self.decode_bits(bits)
         self.fitness = None
 
     def  __str__(self): 
@@ -44,17 +47,20 @@ class Chromosome:
         return reversed(bit_string)
 
     def decode_bits(self, bits):
-        value = 0.0 
+        value = 0.0
         
         for bit in bits:
-            value = value * 2 + (bit == '1')
+            value = value * 2 + (bit == '1') * self.bit_value
 
-        return value
+        return self.domain[0] + value
+
+def random_binary_string(n):
+    return ''.join(random.choice('01') for _ in range(n))
 
 class Population:
     def __init__(self, population_size, domain, num_bits, bit_value):
-        self.size = population_size 
-        self.chromosomes = np.array([Chromosome((np.random.rand() * (domain[1] - domain[0]) + domain[0]) / bit_value, num_bits) for _ in range(population_size)], dtype=object)
+        self.size = population_size
+        self.chromosomes = np.array([Chromosome(random_binary_string(num_bits), num_bits, bit_value, domain) for _ in range(population_size)], dtype=object)
 
     def __str__(self):
         return f"max: {self.max_fitness} mean: {self.mean_fitness} median: {self.median_fitness}" 
@@ -138,13 +144,12 @@ class Sim:
 
     def selection(self, intervals): 
         rand_val = np.random.rand()  
-        i = self.binary_search(0, 1, intervals, rand_val) # find which chromosome was selected
-        print(intervals)
-        return self.population.chromosomes[0]
+        i = self.binary_search(0, len(intervals), intervals, rand_val) # find which chromosome was selected
+        return self.population.chromosomes[i]
 
     def crossover(self, parent1, parent2):
         if np.random.rand() < self.crossover_chance:
-            return (parent1.bits, parent2.bits)
+            return (parent1, parent2)
         else: 
             crossover_point = np.random.randint(self.num_bits)
             str_list1 = list(map(str, parent1.bits))
@@ -154,7 +159,9 @@ class Sim:
             str_list1[crossover_point:] = str_list2[crossover_point:]
             str_list2[crossover_point:] = substr
             
-            return ("".join(str_list1), "".join(str_list2))
+            new_parent1 = Chromosome("".join(str_list1), self.num_bits, self.bit_value, self.domain)
+            new_parent2 = Chromosome("".join(str_list2), self.num_bits, self.bit_value, self.domain)
+            return (new_parent1, new_parent2)
 
     def mutate(self, chromosome):
         chromosome_list = list(chromosome.bits)
@@ -165,7 +172,7 @@ class Sim:
                 else:
                     bit = '1'
 
-        return "".join(chromosome_list)
+        return Chromosome("".join(chromosome_list), self.num_bits, self.bit_value, self.domain)
 
     def execute_iteration(self):
         new_generation = []
@@ -177,16 +184,16 @@ class Sim:
         probabilities = np.zeros(self.population_size)
 
         for chromosome in self.population.chromosomes:
-                fitness = chromosome.evaluate(polynomial)
-                total_fitness += fitness 
+            fitness = chromosome.evaluate(polynomial)
+            total_fitness += fitness 
 
-                if fitness > best_fitness:
-                    best_fitness = fitness 
-                    best_chromosome = chromosome
+            if fitness > best_fitness:
+                best_fitness = fitness 
+                best_chromosome = chromosome
 
         new_generation.append(best_chromosome)
       
-        print(total_fitness)
+        print(f"total_fitness: {total_fitness}")
 
         i = 0
         for chromosome in self.population.chromosomes:
@@ -200,9 +207,7 @@ class Sim:
         while len(new_generation) < self.population_size: # keep on selecting parents
             parent1 = self.selection(intervals)
             parent2 = self.selection(intervals)
-
             print(parent1, parent2)
-
             children = self.crossover(parent1, parent2)
             mutated_children = [self.mutate(child) for child in children]
 
@@ -212,7 +217,7 @@ class Sim:
     def execute_iterations(self, file_name, show):
         while self.iterations > 0:
             self.execute_iteration()
-            self.iteration = self.iterations - 1 
+            self.iterations = self.iterations - 1 
 
 config = Sim.parse_json("config.json")
 if config:
