@@ -153,7 +153,7 @@ class Sim:
         i = self.binary_search(0, len(intervals), intervals, rand_val, iteration) # find which chromosome was selected
         
         if iteration == 0: 
-            print(f"random generated number:{rand_val} interval: {i}")
+            print(f"random generated number:{rand_val} interval: {i}", file=output_file)
 
         return self.population.chromosomes[i]
 
@@ -166,9 +166,9 @@ class Sim:
         bits2 = parent2.bits[:crossover_point] + parent1.bits[crossover_point:]
 
         if iteration == 0: 
-            print(f"parents: {parent1}, {parent2}")
-            print(f"crossover point: {crossover_point}")
-            print(f"children: {bits1}, {bits2}")
+            print(f"parents: {parent1}, {parent2}", file=output_file)
+            print(f"crossover point: {crossover_point}", file=output_file)
+            print(f"children: {bits1}, {bits2}", file=output_file)
 
         return (
             Chromosome(bits1, self.num_bits, self.bit_value, self.domain),
@@ -188,9 +188,10 @@ class Sim:
 
     def execute_iteration(self, iteration):
         if iteration == 0:
+            print("fitness", file=output_file)
             for c in self.population.chromosomes:
                 c.evaluate(self.polynomial)
-                print(c)
+                print(c, file=output_file)
 
         new_generation = []
         intervals = [0.0]
@@ -217,15 +218,15 @@ class Sim:
                 probabilities[i] = chromosome.fitness / total_fitness
                 if iteration == 0:
                 #print(chromosome.fitness)
-                    print(f"probability: {probabilities[i]}")
+                    print(f"probability: {probabilities[i]}", file=output_file)
                 total_probability += probabilities[i]
                 intervals.append(total_probability)
                 i = i + 1
 
         if iteration == 0:
-            print("intervals:")
+            print("intervals:", file=output_file)
             for interval in intervals: 
-                print(interval) 
+                print(interval, file=output_file) 
 
         while len(new_generation) < self.population_size: # keep on selecting parents
             parent1 = self.selection(intervals, iteration)
@@ -236,16 +237,16 @@ class Sim:
             new_generation.extend(children[:self.population.size - len(new_generation)])
       
         if iteration == 0:
-            print(f"Population after crossovers: {new_generation}")
+            print(f"Population after crossovers: {new_generation}", file=output_file)
         
         for child in new_generation:
             self.mutate(child, iteration)
         if iteration == 0:
-            print(f"Population after mutations: {new_generation}")
+            print(f"Population after mutations: {new_generation}", file=output_file)
 
         self.population.chromosomes = new_generation
         self.generations.append([self.population.get_max_fitness(), self.population.get_mean_fitness(), self.population.get_median_fitness()])
-        print(self.population)
+        print(self.population, file=output_file) # prints stats for every generation
 
     def execute_iterations(self, file_name, show):
         iteration = 0
