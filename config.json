@@ -1,5 +1,5 @@
 {
-  "population_size": 20,
+  "population_size": 8,
   "domain": [-1, 2],
   "coefficients": {
     "a": -1,
@@ -9,6 +9,6 @@
   "precision": 6,
   "crossover_chance": 0.25,
   "mutation_chance": 0.01,
-  "iterations": 50
+  "iterations": 20
 }
 

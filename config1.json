@@ -1,0 +1,14 @@
+{
+  "population_size": 20,
+  "domain": [-10, 40],
+  "coefficients": {
+    "a": 5,
+    "b": -10,
+    "c": 75
+  },
+  "precision": 16,
+  "crossover_chance": 0.25,
+  "mutation_chance": 0.1,
+  "iterations": 100
+}
+
